@@ -38,12 +38,9 @@ def main():
     train_loader, valid_loader, test_loader, train_data, valid_data, test_data = load_data(train_dir, test_dir, valid_dir)
 
     #load model 
-    model = load_pretrained_model(args.arch)
-    for param in model.parameters():
-        param.requires_grad = False
-
-    model = set_classifier(model, args.hidden_units)
-                  
+    model = load_pretrained_network(args.arch)
+    model = classifier(model, arge.hidden_units)
+                     
     #define loss function
     criterion = nn.NLLLoss()
 
@@ -113,29 +110,28 @@ print('Data loaded')
 def load_pretrained_network(arch):
     print('load vgg16 or alexnet model')
     if arch == "vgg16":
-         network = models.vgg16(pretrained=True)
+         model = models.vgg16(pretrained=True)
          print('Pretrained Network being used is vgg16')
     elif arch == "alexnet":
-         network = models.alexnet(pretrained=True)
+         model = models.alexnet(pretrained=True)
          print('Pretrained Network being used is alexnet ')
 
     else:
       print('Invalid : vgg16 will be used')      
-      network = models.vgg16(pretrained=True)
+      model = models.vgg16(pretrained=True)
       print('Network loaded')    
-      return network
+      return model
                   
  #Define a new untrained feed-forward network as a classifier , using ReLU activations and dropout  
 #output layer must match flower categories =102
 
 def classifier(model, hidden_units) : 
-#do I need hidden_unites? (model, hidden units) will be needed above
 #check that the layers are the same as original
-#use input feature for trained network used – 25088 for vgg16 or 
+#use input feature for trained network used 
     input = model.classifier[0].in_features
     if hidden_units == None: 
-                       hidden_units = 4000
-
+        hidden_units = 4000
+    
     classifier = nn.Sequential(OrderedDict([
                          ('fc1', nn.Linear(input, hidden_units)),
                          ('relu', nn.ReLU()),
@@ -146,11 +142,10 @@ def classifier(model, hidden_units) :
                          ('fc3', nn.Linear(500, 102)),
                          ('output', nn.LogSoftmax(dim=1))]))
 
-    #freeze parameters  - does this go in the classifer or in the main fcn???? 
-    #for param in model.parameters():
-    #     param.requires_grad = False           
+    #freeze parameters
+    for param in model.parameters():
+        param.requires_grad = False           
     #replace classifier
-
     model.classifier = classifier
     print('classifier defined')                
     return model 
@@ -250,6 +245,4 @@ def save_checkpoint(model, train_data, save_chkpnt, arch, optimizer):
 
 #call main fcn to run the script
 if __name__ == '__main__':
-     main()     
-     
-                  
+     main()  
