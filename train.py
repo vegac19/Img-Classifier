@@ -39,7 +39,7 @@ def main():
 
     #load model 
     model = load_pretrained_network(args.arch)
-    model = classifier(model, arge.hidden_units)
+    model = classifier(model, args.hidden_units)
                      
     #define loss function
     criterion = nn.NLLLoss()
@@ -245,4 +245,5 @@ def save_checkpoint(model, train_data, save_chkpnt, arch, optimizer):
 
 #call main fcn to run the script
 if __name__ == '__main__':
-     main()  
+     main()     
+     
