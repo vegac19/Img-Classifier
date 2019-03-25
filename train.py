@@ -12,22 +12,40 @@ import numpy as np
 from collections import OrderedDict
 from PIL import Image
 from torch.autograd import Variable
-#from workspace_utils import active_session
+#from workspace utils import active_session
 import argparse
 import os
 import sys
 
 def main():
-    args = get_input_args()
-    if args.gpu is True:
-        if torch.cuda.is_available():
-            device = torch.device('cuda')
-        print('GPU')
+   # args = get_input_args()
+   # if args.gpu is True:
+    #    if torch.cuda.is_available():
+     #       device = torch.device("cuda:0")
+      #  print('GPU')
             
+   # else:
+    #    device = torch.device("cpu")
+     #   print('CPU')
+                    
+    args = get_input_args()
+    is_gpu = args.gpu
+    use_cuda = torch.cuda.is_available()
+    device = torch.device("cpu")
+  
+    if is_gpu and use_cuda:
+         device = torch.device("cuda")
+         print(f"Device is set to {device}")
+
     else:
-        device = torch.device('cpu')
-        print('CPU')
-                     
+        device = torch.device("cpu")
+        print(f"Device is set to {device}")
+
+               
+            
+            
+            
+            
     #directories for test, validation and training sets
     data_dir = args.dir 
     train_dir = data_dir + '/train'
@@ -47,12 +65,11 @@ def main():
     #define Optimizer
     optimizer = optim.Adam(model.classifier.parameters(), lr=args.lr)
 
-    model_trained =  training(args.epochs, train_loader, model, device, optimizer, criterion)
-    validation(args.epochs, model_trained, valid_loader, device, criterion)
-    test_model(args.epochs, model_trained, test_loader, optimizer, criterion, device)
+    model_trained =  train_model(args.epochs, train_loader, device, model, optimizer, criterion)
+    validation(model_trained, valid_loader, device, optimizer, criterion)
+    test_model(args.epochs, model_trained, test_loader, device, optimizer, criterion)
     save_checkpoint(model_trained, train_data, args.save_chkpnt, args.arch, optimizer)
     print('training done')
-
 
 
 # create parser object and give expected arguments will be used to process the command-#line arguments when the program runs.
@@ -117,10 +134,10 @@ def load_pretrained_network(arch):
          print('Pretrained Network being used is alexnet ')
 
     else:
-      print('Invalid : vgg16 will be used')      
-      model = models.vgg16(pretrained=True)
-      print('Network loaded')    
-      return model
+        print('Invalid : vgg16 will be used')      
+        model = models.vgg16(pretrained=True)
+        print('Network loaded')    
+    return model
                   
  #Define a new untrained feed-forward network as a classifier , using ReLU activations and dropout  
 #output layer must match flower categories =102
@@ -153,6 +170,7 @@ def classifier(model, hidden_units) :
 
 
 def validation(model, valid_loader, device, criterion):
+    print('start validation')
     validation_loss = 0 
     validation_accuracy = 0 
     model.to('cuda') 
@@ -167,8 +185,10 @@ def validation(model, valid_loader, device, criterion):
         equality = (labels.data == ps.max(dim=1)[1])
         validation_accuracy += equality.type(torch.FloatTensor).mean()
     return validation_loss, validation_accuracy
-
+    print('end validation')
+    
 def train_model(epochs, train_loader, device, model, optimizer, criterion):
+    print('start train_model')
     #passes through the data set
     epochs = 5
     steps = 0
@@ -197,7 +217,7 @@ def train_model(epochs, train_loader, device, model, optimizer, criterion):
 
                 # 2/20  --need to turn validation gradient off to save mem.
                 with torch.no_grad():
-                    validation_loss, validation_accuracy = validation(model, valid_loader, criterion)
+                     validation_loss, validation_accuracy = validation(model, valid_loader, device, criterion)
 
                 print("Epoch: {}/{}.. ".format(e+1, epochs),
                       "Training Loss: {:.3f}.. ".format(running_loss/print_every),
@@ -205,7 +225,7 @@ def train_model(epochs, train_loader, device, model, optimizer, criterion):
                       "Validation Accuracy: {:.3f}".format(validation_accuracy/len(valid_loader)))                
 
                 running_loss = 0
-               #turn training back on
+                #turn training back on
                 model.train()
     print ("Training complete")
     return model 
@@ -213,6 +233,7 @@ def train_model(epochs, train_loader, device, model, optimizer, criterion):
                   
 #  validation on the test set
 def test_model(model, test_loader, optimizer, criterion, device):
+    print('start test_model')
     test_correct = 0
     test_total = 0
    #if model.eval doesnt work try:float tensor             
@@ -246,4 +267,5 @@ def save_checkpoint(model, train_data, save_chkpnt, arch, optimizer):
 #call main fcn to run the script
 if __name__ == '__main__':
      main()     
+     
      
