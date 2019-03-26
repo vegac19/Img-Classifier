@@ -12,7 +12,6 @@ import numpy as np
 from collections import OrderedDict
 from PIL import Image
 from torch.autograd import Variable
-#from workspace utils import active_session
 import argparse
 import os
 import sys
@@ -40,12 +39,8 @@ def main():
     else:
         device = torch.device("cpu")
         print(f"Device is set to {device}")
+   
 
-               
-            
-            
-            
-            
     #directories for test, validation and training sets
     data_dir = args.dir 
     train_dir = data_dir + '/train'
@@ -65,10 +60,10 @@ def main():
     #define Optimizer
     optimizer = optim.Adam(model.classifier.parameters(), lr=args.lr)
 
-    model_trained =  train_model(args.epochs, train_loader, device, model, optimizer, criterion)
-    validation(model_trained, valid_loader, device, optimizer, criterion)
-    test_model(args.epochs, model_trained, test_loader, device, optimizer, criterion)
-    save_checkpoint(model_trained, train_data, args.save_chkpnt, args.arch, optimizer)
+    model_trained =  train_model(args.epochs, train_loader, valid_loader, device, model, optimizer, criterion)
+    validation(model_trained, valid_loader, device, criterion)
+    test_model(model_trained, test_loader, device, optimizer, criterion)
+    save_checkpoint(args.epochs, model_trained, train_data, args.save_dir, args.arch, optimizer)
     print('training done')
 
 
@@ -79,7 +74,7 @@ def get_input_args():
     parser.add_argument('--gpu', type=bool, default='True', help='True: gpu, False: cpu')
     parser.add_argument('--arch', type=str, default='vgg16', help='model arch')
     parser.add_argument('--dir', type=str, default='flowers', help='flower images directory path')
-    parser.add_argument('--save_chkpnt ', type=str, default='checkpoint.pth', help='save model to checkpoint file')
+    parser.add_argument('--save_dir', type=str, default='checkpoint.pth', help='save model to checkpoint file')
     parser.add_argument('--epochs', type=int, default=5, help='total epochs for the training')
     parser.add_argument('--lr', type=float, default=0.001, help='learning rate for the training')
     parser.add_argument('--hidden_units', type=int, default=4000, help='hidden units for classifier')
@@ -187,10 +182,11 @@ def validation(model, valid_loader, device, criterion):
     return validation_loss, validation_accuracy
     print('end validation')
     
-def train_model(epochs, train_loader, device, model, optimizer, criterion):
+    
+def train_model(epochs, train_loader, valid_loader, device, model, optimizer, criterion):
     print('start train_model')
     #passes through the data set
-    epochs = 5
+    epochs = 1
     steps = 0
     print_every = 30
     running_loss = 0
@@ -232,7 +228,7 @@ def train_model(epochs, train_loader, device, model, optimizer, criterion):
 
                   
 #  validation on the test set
-def test_model(model, test_loader, optimizer, criterion, device):
+def test_model(model, test_loader, device, optimizer, criterion):
     print('start test_model')
     test_correct = 0
     test_total = 0
@@ -247,12 +243,12 @@ def test_model(model, test_loader, optimizer, criterion, device):
             test_correct += (predicted == labels).sum().item()
     
     print('Accuracy of the network on the test images: %d %%' % (100 * test_correct / test_total))
-
-    test_model(model)
+    return test_correct, test_total
+   # test_model(model)
 
 
 # Save the checkpoint 
-def save_checkpoint(model, train_data, save_chkpnt, arch, optimizer):
+def save_checkpoint(epochs, model, train_data, save_dir, arch, optimizer):
      model.class_to_idx = train_data.class_to_idx
      checkpoint = {'arch': 'vgg16',
                   'classifier': model.classifier,
@@ -261,11 +257,13 @@ def save_checkpoint(model, train_data, save_chkpnt, arch, optimizer):
                   'epochs': epochs,
                   'optimizer_state': optimizer.state_dict
                   }
-     torch.save(checkpoint, save_chkpnt)
+     torch.save(checkpoint, save_dir)
      print('end save checkpoint')
 
 #call main fcn to run the script
 if __name__ == '__main__':
      main()     
      
-     
+                  
+                                 
+                 
